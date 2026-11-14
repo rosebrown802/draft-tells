@@ -13,7 +13,7 @@
   --accent:#2c4a9a; --accent-ink:#ffffff; --accent-soft:#dfe6f7;
   --ok:#1f6b52; --ok-soft:#dcebe4; --warn:#8f5600; --warn-soft:#f6e7c8; --bad:#a23a2c; --bad-soft:#f5ddd8;
   --display:"Bricolage Grotesque","Trebuchet MS",sans-serif; --body:"Source Sans 3","Segoe UI",sans-serif; --serif:"Source Serif 4",Georgia,serif;
-  --c-dash:66,120,220; --c-three:214,150,20; --c-pivot:214,70,60; --c-stock:150,90,210; --c-line:40,160,110; --c-ask:20,160,180; --c-echo:220,80,160;
+  --c-dash:66,120,220; --c-three:214,150,20; --c-pivot:214,70,60; --c-stock:150,90,210; --c-line:40,160,110; --c-ask:20,160,180; --c-echo:220,80,160; --c-adv:120,130,150;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#14171f; --surface:#1c212c; --ink:#e7eaf2; --muted:#9aa3b5; --line:#323a4a;
@@ -54,7 +54,7 @@ button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outl
 #proof{font:400 16px/1.75 var(--serif);white-space:pre-wrap;overflow-wrap:anywhere;min-height:120px}
 mark{color:inherit;background:rgba(var(--c),.22);border-bottom:2px solid rgb(var(--c));border-radius:2px;padding:1px 0}
 mark.dim{background:transparent;border-bottom-color:transparent}
-.dash{--c:var(--c-dash)} .three{--c:var(--c-three)} .pivot{--c:var(--c-pivot)} .stock{--c:var(--c-stock)} .line{--c:var(--c-line)} .ask{--c:var(--c-ask)} .echo{--c:var(--c-echo)}
+.dash{--c:var(--c-dash)} .three{--c:var(--c-three)} .pivot{--c:var(--c-pivot)} .stock{--c:var(--c-stock)} .line{--c:var(--c-line)} .ask{--c:var(--c-ask)} .echo{--c:var(--c-echo)} .adv{--c:var(--c-adv)}
 .guide{margin-top:18px}
 .guide dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px 24px;margin:0}
 .guide dt{font-weight:600;border-left:5px solid rgb(var(--c));padding-left:8px}
@@ -100,6 +100,7 @@ footer{margin-top:24px;color:var(--muted);font-size:14px;max-width:75ch}
     <div><dt class="stock">Stock phrases</dt><dd>Words that turn up in machine prose far more than in people's: tapestry, testament, delve, at its core.</dd></div>
     <div><dt class="line">One-liners</dt><dd>A short sentence standing alone as a paragraph, used as a moral. One lands. Five is a pattern.</dd></div>
     <div><dt class="ask">Quick questions</dt><dd>A question of a few words that the next sentence answers. "The result?"</dd></div>
+    <div><dt class="adv">Adverbs</dt><dd>Words ending in -ly, plus qualifiers such as just, very, really and quite. Cut the ones the sentence stands without.</dd></div>
     <div><dt class="echo">Echoes</dt><dd>The same run of six or more words appearing twice in the draft.</dd></div>
   </dl>
 </section>
@@ -114,9 +115,12 @@ const CATS=[
  {id:"stock",name:"Stock phrases",watch:2,heavy:5},
  {id:"line",name:"One-liners",watch:2,heavy:4},
  {id:"ask",name:"Quick questions",watch:1,heavy:2.5},
+ {id:"adv",name:"Adverbs",watch:14,heavy:22},
  {id:"echo",name:"Echoes",watch:0.01,heavy:2}
 ];
-const STOCK=["delve","delves","delving","tapestry","testament to","at its core","at the heart of","it's worth noting","it is worth noting","in today's","ever-evolving","ever-changing","landscape of","navigate the","navigating the","plays a crucial role","plays a vital role","serves as a","stands as a","reminds us","a reminder that","underscores","underscoring","embodies","embodying","perfectly embodying","moreover","furthermore","in conclusion","ultimately","rich tapestry","realm of","beacon of","resonates with","deeply poignant","profound","seamless","seamlessly","intricate","pivotal","elevate","unlock","harness","vibrant","multifaceted","nuanced","in essence","when it comes to","more than just","the power of","a journey of","transformative"];
+const STOCK=["delve","delves","delving","tapestry","testament to","at its core","at the heart of","it's worth noting","it is worth noting","in today's","ever-evolving","ever-changing","landscape of","navigate the","navigating the","plays a crucial role","plays a vital role","serves as a","stands as a","reminds us","a reminder that","underscores","underscoring","embodies","embodying","perfectly embodying","moreover","furthermore","in conclusion","rich tapestry","realm of","beacon of","resonates with","deeply poignant","profound","seamless","intricate","pivotal","elevate","unlock","harness","vibrant","multifaceted","nuanced","in essence","when it comes to","more than just","the power of","a journey of","transformative"];
+const NOT_ADV=new Set("only early family likely unlikely holy ugly lonely friendly unfriendly daily weekly monthly yearly nightly belly rely apply supply reply imply comply multiply fly butterfly firefly dragonfly gadfly july italy ally bully jelly silly lovely lively elderly costly deadly orderly curly hilly chilly smelly wobbly assembly anomaly melancholy homily lily emily molly sally billy kelly holly polly ghostly godly worldly earthly heavenly motherly fatherly brotherly sisterly scholarly cowardly beastly ghastly stately timely unruly wily oily surly burly gnarly pearly bristly prickly crumbly sickly kindly".split(" "));
+const QUAL=new Set("just very really quite rather somewhat almost perhaps maybe often always never still even".split(" "));
 const W="[\\w'’-]+";
 const ITEM=W+"(?: "+W+"){0,3}";
 const RX={
@@ -145,6 +149,8 @@ function analyze(text){
   RX.bare3.lastIndex=0; while((m=RX.bare3.exec(text))){const s=m.index+m[0].length-m[1].length;add(s,s+m[1].length,"three");}
   for(const rx of RX.pivots){rx.lastIndex=0; while((m=rx.exec(text)))add(m.index,m.index+m[0].length,"pivot");}
   RX.stock.lastIndex=0; while((m=RX.stock.exec(text)))add(m.index,m.index+m[0].length,"stock");
+  const adv=/\b[A-Za-z]+\b/g; while((m=adv.exec(text))){const w=m[0].toLowerCase();
+    if((w.length>4&&w.endsWith("ly")&&!NOT_ADV.has(w))||QUAL.has(w))add(m.index,m.index+m[0].length,"adv");}
   RX.ask.lastIndex=0; while((m=RX.ask.exec(text))){const s=m.index+m[0].length-m[1].length;add(s,s+m[1].length,"ask");}
   // one-line paragraphs
   const para=/[^\n]+/g; while((m=para.exec(text))){const p=m[0].trim(); if(!/[.!?]["”’)]?$/.test(p))continue;

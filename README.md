@@ -20,6 +20,7 @@ Writers and marketing teams now draft with AI help, and readers have learned to 
 | Stock phrases | Words far more common in machine prose: tapestry, testament, delve, at its core |
 | One-liners | A short sentence standing alone as a paragraph |
 | Quick questions | A question of a few words that the next sentence answers |
+| Adverbs | Words ending in -ly, plus qualifiers such as just, very, really and quite |
 | Echoes | The same run of six or more words appearing twice |
 
 Each habit gets a count, a rate per 1,000 words and a rating of Fine, Watch or Heavy. Select a tile to isolate one habit in the marked-up draft.
