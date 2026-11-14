@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Draft Tells</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600&family=Source+Serif+4:opsz,wght@8..60,400&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: an editor's desk. Draft on the left, the marked-up proof on the right, tallies across the top. */
+:root{
+  --bg:#f2f3f6; --surface:#ffffff; --ink:#1b2030; --muted:#5c6475; --line:#d5d9e2;
+  --accent:#2c4a9a; --accent-ink:#ffffff; --accent-soft:#dfe6f7;
+  --ok:#1f6b52; --ok-soft:#dcebe4; --warn:#8f5600; --warn-soft:#f6e7c8; --bad:#a23a2c; --bad-soft:#f5ddd8;
+  --display:"Bricolage Grotesque","Trebuchet MS",sans-serif; --body:"Source Sans 3","Segoe UI",sans-serif; --serif:"Source Serif 4",Georgia,serif;
+  --c-dash:66,120,220; --c-three:214,150,20; --c-pivot:214,70,60; --c-stock:150,90,210; --c-line:40,160,110; --c-ask:20,160,180; --c-echo:220,80,160;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#14171f; --surface:#1c212c; --ink:#e7eaf2; --muted:#9aa3b5; --line:#323a4a;
+  --accent:#8fb0ff; --accent-ink:#101522; --accent-soft:#25304a;
+  --ok:#6fc7a4; --ok-soft:#1f352d; --warn:#e3b35a; --warn-soft:#3b3220; --bad:#ee9483; --bad-soft:#40251f; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#14171f; --surface:#1c212c; --ink:#e7eaf2; --muted:#9aa3b5; --line:#323a4a;
+  --accent:#8fb0ff; --accent-ink:#101522; --accent-soft:#25304a;
+  --ok:#6fc7a4; --ok-soft:#1f352d; --warn:#e3b35a; --warn-soft:#3b3220; --bad:#ee9483; --bad-soft:#40251f; color-scheme:dark;}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--body)}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:baseline;justify-content:space-between}
+h1{font:700 30px/1.1 var(--display);margin:0}
+h1 span{color:var(--accent)}
+.tag{color:var(--muted);margin:4px 0 0;max-width:62ch}
+.private{background:var(--ok-soft);color:var(--ok);border-radius:6px;padding:4px 10px;font-weight:600;font-size:14px}
+h2{font:700 18px/1.2 var(--display);margin:0 0 8px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:18px 0 6px}
+.tile{font:inherit;color:inherit;text-align:left;background:var(--surface);border:1px solid var(--line);border-top:5px solid rgb(var(--c));border-radius:8px;padding:8px 10px;cursor:pointer}
+.tile[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:1px}
+.tile b{display:block;font:700 24px/1.1 var(--display);font-variant-numeric:tabular-nums}
+.tile .name{font-weight:600}
+.tile .rate{display:block;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:0 8px;margin-top:4px}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.watch{background:var(--warn-soft);color:var(--warn)} .pill.heavy{background:var(--bad-soft);color:var(--bad)}
+.sum{color:var(--muted);margin:0 0 14px}
+.desk{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+@media (max-width:820px){.desk{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+textarea{width:100%;min-height:420px;resize:vertical;font:400 16px/1.6 var(--serif);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+button.go,button.plain{font:600 15px var(--body);border-radius:8px;padding:8px 14px;cursor:pointer}
+button.go{background:var(--accent);color:var(--accent-ink);border:0}
+button.plain{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#proof{font:400 16px/1.75 var(--serif);white-space:pre-wrap;overflow-wrap:anywhere;min-height:120px}
+mark{color:inherit;background:rgba(var(--c),.22);border-bottom:2px solid rgb(var(--c));border-radius:2px;padding:1px 0}
+mark.dim{background:transparent;border-bottom-color:transparent}
+.dash{--c:var(--c-dash)} .three{--c:var(--c-three)} .pivot{--c:var(--c-pivot)} .stock{--c:var(--c-stock)} .line{--c:var(--c-line)} .ask{--c:var(--c-ask)} .echo{--c:var(--c-echo)}
+.guide{margin-top:18px}
+.guide dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px 24px;margin:0}
+.guide dt{font-weight:600;border-left:5px solid rgb(var(--c));padding-left:8px}
+.guide dd{margin:2px 0 0 13px;color:var(--muted)}
+footer{margin-top:24px;color:var(--muted);font-size:14px;max-width:75ch}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Draft <span>Tells</span></h1>
+    <p class="tag">Paste a draft. See the writing habits that make prose read as machine-made, marked where they occur.</p>
+  </div>
+  <span class="private">Runs in your browser. Your draft is never sent anywhere.</span>
+</header>
+
+<div class="tiles" id="tiles"></div>
+<p class="sum" id="sum"></p>
+
+<div class="desk">
+  <section class="panel">
+    <h2><label for="draft">Your draft</label></h2>
+    <textarea id="draft" spellcheck="false"></textarea>
+    <div class="btns">
+      <button class="go" id="check" type="button">Check draft</button>
+      <button class="plain" id="sample" type="button">Load the sample</button>
+      <button class="plain" id="clear" type="button">Clear</button>
+    </div>
+  </section>
+  <section class="panel">
+    <h2>Marked proof</h2>
+    <div id="proof" aria-live="polite"></div>
+  </section>
+</div>
+
+<section class="panel guide">
+  <h2>What each mark means</h2>
+  <dl>
+    <div><dt class="dash">Dashes</dt><dd>Em dashes, counted. One or two per few hundred words reads as style. More reads as a tic.</dd></div>
+    <div><dt class="three">Threes</dt><dd>Lists of exactly three. Aim for one per section at most. Two items or four read as more human.</dd></div>
+    <div><dt class="pivot">Pivots</dt><dd>"It isn't X. It's Y," "not just X," and "X, not Y." Keep the best one or two in a piece and state the rest plainly.</dd></div>
+    <div><dt class="stock">Stock phrases</dt><dd>Words that turn up in machine prose far more than in people's: tapestry, testament, delve, at its core.</dd></div>
+    <div><dt class="line">One-liners</dt><dd>A short sentence standing alone as a paragraph, used as a moral. One lands. Five is a pattern.</dd></div>
+    <div><dt class="ask">Quick questions</dt><dd>A question of a few words that the next sentence answers. "The result?"</dd></div>
+    <div><dt class="echo">Echoes</dt><dd>The same run of six or more words appearing twice in the draft.</dd></div>
+  </dl>
+</section>
+
+<footer>Draft Tells checks habits, not authorship. It cannot tell who or what wrote a piece, and plenty of good human writing uses every pattern here. Use the marks to decide what to keep on purpose.</footer>
+</div>
+<script>
+const CATS=[
+ {id:"dash",name:"Dashes",watch:3,heavy:6},
+ {id:"three",name:"Threes",watch:2,heavy:4},
+ {id:"pivot",name:"Pivots",watch:1.5,heavy:3},
+ {id:"stock",name:"Stock phrases",watch:2,heavy:5},
+ {id:"line",name:"One-liners",watch:2,heavy:4},
+ {id:"ask",name:"Quick questions",watch:1,heavy:2.5},
+ {id:"echo",name:"Echoes",watch:0.01,heavy:2}
+];
+const STOCK=["delve","delves","delving","tapestry","testament to","at its core","at the heart of","it's worth noting","it is worth noting","in today's","ever-evolving","ever-changing","landscape of","navigate the","navigating the","plays a crucial role","plays a vital role","serves as a","stands as a","reminds us","a reminder that","underscores","underscoring","embodies","embodying","perfectly embodying","moreover","furthermore","in conclusion","ultimately","rich tapestry","realm of","beacon of","resonates with","deeply poignant","profound","seamless","seamlessly","intricate","pivotal","elevate","unlock","harness","vibrant","multifaceted","nuanced","in essence","when it comes to","more than just","the power of","a journey of","transformative"];
+const W="[\\w'’-]+";
+const ITEM=W+"(?: "+W+"){0,3}";
+const RX={
+ three:new RegExp("\\b("+ITEM+"), ("+ITEM+"),? (?:and|or) ("+ITEM+")\\b","g"),
+ bare3:new RegExp("(?:^|[.!?]\\s+|\\n)("+W+"(?: "+W+"){0,2}, "+W+"(?: "+W+"){0,2}, "+W+"(?: "+W+"){0,2}[.!?])","g"),
+ pivots:[
+  /\b(?:is|was|are|were|does|did|do|has|have|had|could|would|should|ca|wo)n['’]t\b[^.!?\n]{0,90}[.!?]\s+(?:It|She|He|They|That|This|We|You|I)(?:['’](?:s|re|m|d)| (?:is|was|are|were|does|did|makes|made|reveals|means))\b[^.!?\n]{0,90}[.!?]/g,
+  /\bnot (?:just|only|merely|simply)\b[^.!?\n]{0,80}/gi,
+  /\bnot\b[^.!?,\n]{1,50}, but\b[^.!?\n]{0,60}/gi,
+  /\b[^.!?\n,]{3,60}, not [^.!?\n,]{1,40}[.!?]/g,
+  /\bNot [^.!?\n]{1,60}[.!?]\s+Not [^.!?\n]{1,60}[.!?]/g
+ ],
+ ask:/(?:^|[.!?]\s+|\n)((?:[A-Z][\w'’]*)(?: [\w'’]+){0,4}\?)(?=\s+[A-Z])/g,
+ stock:new RegExp("\\b(?:"+STOCK.map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&").replace(/'/g,"['’]")).join("|")+")\\b","gi")
+};
+function countWords(t){const m=t.match(/[\w'’-]+/g);return m?m.length:0;}
+function analyze(text){
+  const hits=[]; const add=(s,e,cat)=>{if(e>s)hits.push({s,e,cat});};
+  let m;
+  const dash=/—|\s--\s|\s–\s/g; while((m=dash.exec(text)))add(m.index,m.index+m[0].length,"dash");
+  RX.three.lastIndex=0; while((m=RX.three.exec(text))){
+    const before=text.slice(Math.max(0,m.index-2),m.index);
+    const after=text.slice(m.index+m[0].length,m.index+m[0].length+2);
+    if(before===", "||after.startsWith(", ")) continue;   // part of a longer list
+    add(m.index,m.index+m[0].length,"three");}
+  RX.bare3.lastIndex=0; while((m=RX.bare3.exec(text))){const s=m.index+m[0].length-m[1].length;add(s,s+m[1].length,"three");}
+  for(const rx of RX.pivots){rx.lastIndex=0; while((m=rx.exec(text)))add(m.index,m.index+m[0].length,"pivot");}
+  RX.stock.lastIndex=0; while((m=RX.stock.exec(text)))add(m.index,m.index+m[0].length,"stock");
+  RX.ask.lastIndex=0; while((m=RX.ask.exec(text))){const s=m.index+m[0].length-m[1].length;add(s,s+m[1].length,"ask");}
+  // one-line paragraphs
+  const para=/[^\n]+/g; while((m=para.exec(text))){const p=m[0].trim(); if(!/[.!?]["”’)]?$/.test(p))continue;
+    const sentences=p.split(/(?<=[.!?])\s+/).filter(Boolean); const n=countWords(p);
+    if(sentences.length===1&&n>=3&&n<=12){const s=m.index+m[0].indexOf(p);add(s,s+p.length,"line");}}
+  // echoes: repeated runs of six words
+  const toks=[]; const wr=/[\w'’-]+/g; while((m=wr.exec(text)))toks.push({w:m[0].toLowerCase(),s:m.index,e:m.index+m[0].length});
+  const seen=new Map(); const N=6; let i=0;
+  while(i+N<=toks.length){const key=toks.slice(i,i+N).map(t=>t.w).join(" ");
+    if(seen.has(key)){let j=i+N,k=seen.get(key)+N; while(j<toks.length&&k<i&&toks[j].w===toks[k].w){j++;k++;}
+      add(toks[i].s,toks[j-1].e,"echo"); i=j;}
+    else{seen.set(key,i); i++;}}
+  // resolve overlaps: earliest start wins, then the longer span
+  hits.sort((a,b)=>a.s-b.s||b.e-a.e); const out=[]; let end=-1;
+  for(const h of hits){if(h.s>=end){out.push(h);end=h.e;}}
+  const counts={}; for(const c of CATS)counts[c.id]=0; for(const h of hits)counts[h.cat]++;
+  // count from de-duplicated set per category so a pivot matched twice counts once
+  const per={}; for(const c of CATS){let e=-1,n=0; for(const h of hits.filter(x=>x.cat===c.id)){if(h.s>=e){n++;e=h.e;}} per[c.id]=n;}
+  return {marks:out,counts:per,words:countWords(text)};
+}
+function verdict(cat,count,words){if(!count)return "ok"; const rate=count/Math.max(words,150)*1000; return rate>=cat.heavy?"heavy":rate>=cat.watch?"watch":"ok";}
+if(typeof module!=="undefined"){module.exports={analyze,verdict,CATS};}
+
+if(typeof document!=="undefined"){
+const SAMPLE=`The city has always been more than just a place. It is a tapestry of voices, memories, and dreams—each one a testament to the people who built it.
+
+Morning arrives quietly. The bakers are up first, then the bus drivers, then the dog walkers with their coffee. Nobody here is in a hurry—not yet—and the streets seem to know it.
+
+The market isn't just a place to shop. It's where the neighborhood remembers itself.
+
+The result? A community that feels vibrant, resilient, and alive. At its core, the market reminds us that belonging is built, not bought.
+
+I went there last Tuesday because my oven broke and I needed bread. The woman at the third stall sold me a loaf that was still warm, and she told me her mother had baked in the same spot for forty years. I burned my fingers carrying it home.
+
+That is the power of place.
+
+Ultimately, the city is a tapestry of voices, memories, and dreams that we carry with us.`;
+const $=id=>document.getElementById(id);
+let only=null,last=null;
+function el(tag,cls,text){const e=document.createElement(tag); if(cls)e.className=cls; if(text!=null)e.textContent=text; return e;}
+function draw(){
+  const text=$("draft").value; const r=analyze(text); last=r;
+  const tiles=$("tiles"); tiles.replaceChildren();
+  for(const c of CATS){const n=r.counts[c.id]; const v=verdict(c,n,r.words);
+    const b=el("button","tile "+c.id); b.type="button"; b.setAttribute("aria-pressed",String(only===c.id));
+    b.append(el("b",null,String(n)),el("span","name",c.name),
+      el("span","rate",r.words?(n/r.words*1000).toFixed(1)+" per 1,000 words":"no text yet"),
+      el("span","pill "+v,v==="ok"?"Fine":v==="watch"?"Watch":"Heavy"));
+    b.addEventListener("click",()=>{only=only===c.id?null:c.id;draw();});
+    tiles.append(b);}
+  const total=Object.values(r.counts).reduce((a,b)=>a+b,0);
+  $("sum").textContent=r.words?total+" marks in "+r.words.toLocaleString()+" words."+(only?" Showing "+CATS.find(c=>c.id===only).name.toLowerCase()+" only. Select the tile again to show all.":" Select a tile to isolate one habit."):"Paste a draft and select Check draft.";
+  const proof=$("proof"); proof.replaceChildren(); let pos=0;
+  for(const h of r.marks){ if(h.s>pos)proof.append(text.slice(pos,h.s));
+    const mk=el("mark",h.cat+(only&&only!==h.cat?" dim":""),text.slice(h.s,h.e)); mk.title=CATS.find(c=>c.id===h.cat).name; proof.append(mk); pos=h.e;}
+  if(pos<text.length)proof.append(text.slice(pos));
+  if(!text)proof.append(el("span",null,"The marked-up draft appears here."));
+}
+$("check").addEventListener("click",draw);
+$("sample").addEventListener("click",()=>{$("draft").value=SAMPLE;only=null;draw();});
+$("clear").addEventListener("click",()=>{$("draft").value="";only=null;draw();$("draft").focus();});
+let timer; $("draft").addEventListener("input",()=>{clearTimeout(timer);timer=setTimeout(draw,400);});
+$("draft").value=SAMPLE; draw();
+}
+</script>
+</body>
+</html>
